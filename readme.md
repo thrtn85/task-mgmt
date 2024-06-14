@@ -23,3 +23,17 @@ Create a web application for managing tasks. The app should allow users to regis
 - Database: Use PostgreSQL or MySQL for storing user accounts and tasks. Sqlite for dev.
 - Authentication: Implement JWT (JSON Web Tokens) for user authentication.
 - Deployment: Deploy the web app to a cloud platform like Heroku or AWS.
+
+
+
+## Example
+
+### Create Tasks
+
+`curl -X POST -H "Content-Type: application/json" -d "{\"title\":\"The Go Programming Language\", \"description\":\"Alan A. A. Donovan\",\"dueDate\":\"2024-06-22T00:00:00Z\", \"status\":\"pending\"}" http://localhost:8080/tasks`
+
+### Retrieve All Tasks
+`curl http://localhost:8080/tasks`
+
+### Retrieve a Specific Task
+`curl http://localhost:8080/tasks/6`
