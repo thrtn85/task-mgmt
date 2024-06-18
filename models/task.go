@@ -1,11 +1,15 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Task struct {
-	ID          int       `json:"id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	DueDate     time.Time `json:"dueDate"`
-	Status      string    `json:"status"`
+	gorm.Model
+	Title       string
+	Description string
+	DueDate     time.Time
+	Status      string
 }

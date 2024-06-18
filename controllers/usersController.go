@@ -62,7 +62,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Loop up requested user
+	// Look up requested user
 	var user models.User
 	initializers.DB.First(&user, "email = ?", body.Email)
 

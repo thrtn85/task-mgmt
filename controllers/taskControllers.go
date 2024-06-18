@@ -3,32 +3,86 @@ package controllers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/thrtn85/task-mgmt/config"
+	"github.com/thrtn85/task-mgmt/initializers"
 	"github.com/thrtn85/task-mgmt/models"
 )
 
-func GetTasks(requestContext *gin.Context) {
-	requestContext.IndentedJSON(http.StatusOK, config.Tasks)
+func GetTasks(c *gin.Context) {
+	var task []models.Task
+	// Fetch all task from the database
+	initializers.DB.Find(&task)
+	c.JSON(http.StatusOK, task)
 }
 
-func GetTaskByID(requestContext *gin.Context) {
-	id := requestContext.Param("id")
-	taskID, err := strconv.Atoi(id)
-	if err != nil {
-		requestContext.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invalid task id"})
+func CreateTask(c *gin.Context) {
+	var body struct {
+		Title       string
+		Description string
+		DueDate     time.Time
+		Status      string
+	}
+
+	if c.Bind(&body) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to read body",
+		})
 		return
 	}
-	for _, t := range config.Tasks {
-		if t.ID == taskID {
-			requestContext.IndentedJSON(http.StatusOK, t)
-			return
-		}
+
+	// Create the task
+	task := models.Task{Title: body.Title, Description: body.Description, DueDate: body.DueDate, Status: body.Status}
+	result := initializers.DB.Create(&task)
+
+	if result.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to create task",
+		})
+		return
 	}
-	requestContext.IndentedJSON(http.StatusNotFound, gin.H{"message": "task not found"})
+	// Respond
+	c.JSON(http.StatusOK, gin.H{
+		"message": task,
+	})
 }
 
+func GetTaskByID(c *gin.Context) {
+	// Extract ID from URL parameters
+	idParam := c.Param("id")
+	if idParam == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "ID parameter is required",
+		})
+		return
+	}
+
+	// Convert ID to uint
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid ID format",
+		})
+		return
+	}
+
+	// Look up the requested task
+	var task models.Task
+	if err := initializers.DB.First(&task, uint(id)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Task not found",
+		})
+		return
+	}
+
+	// Return the task
+	c.JSON(http.StatusOK, gin.H{
+		"task": task,
+	})
+}
+
+/*
 func GetTasksByStatus(requestContext *gin.Context) {
 	status := requestContext.Param("status")
 	if status == "" {
@@ -48,26 +102,7 @@ func GetTasksByStatus(requestContext *gin.Context) {
 	}
 }
 
-func AddTask(requestContext *gin.Context) {
-	var newTask models.Task
-	if err := requestContext.ShouldBindJSON(&newTask); err != nil {
-		requestContext.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	maxID := 0
-	for _, t := range config.Tasks {
-		if t.ID > maxID {
-			maxID = t.ID
-		}
-	}
-	newTask.ID = maxID + 1
-	config.Tasks = append(config.Tasks, newTask)
-	if err := config.SaveTasksToJSON(); err != nil {
-		requestContext.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "failed to save tasks"})
-		return
-	}
-	requestContext.JSON(http.StatusCreated, newTask)
-}
+
 
 func UpdateTask(requestContext *gin.Context) {
 	id := requestContext.Param("id")
@@ -116,3 +151,4 @@ func DeleteTask(requestContext *gin.Context) {
 	}
 	requestContext.IndentedJSON(http.StatusNotFound, gin.H{"message": "task not found"})
 }
+*/
