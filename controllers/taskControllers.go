@@ -82,38 +82,44 @@ func GetTaskByID(c *gin.Context) {
 	})
 }
 
-/*
-func GetTasksByStatus(requestContext *gin.Context) {
-	status := requestContext.Param("status")
+func GetTasksByStatus(c *gin.Context) {
+	status := c.Param("status")
 	if status == "" {
-		requestContext.IndentedJSON(http.StatusBadRequest, gin.H{"message": "status parameter is required"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "status parameter is required"})
 		return
 	}
-	var tasksWithStatus []models.Task
-	for _, t := range config.Tasks {
-		if t.Status == status {
-			tasksWithStatus = append(tasksWithStatus, t)
-		}
+
+	// Look up the requested task
+	var tasks []models.Task
+	if err := initializers.DB.Where("status = ?", status).Find(&tasks).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
 	}
-	if len(tasksWithStatus) > 0 {
-		requestContext.IndentedJSON(http.StatusOK, tasksWithStatus)
-	} else {
-		requestContext.IndentedJSON(http.StatusNotFound, gin.H{"message": "no tasks found with the given status"})
+
+	if len(tasks) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "No tasks found with the given status"})
+		return
 	}
+
+	// Return the task
+	c.JSON(http.StatusOK, gin.H{
+		"tasks": tasks,
+	})
 }
 
+/*
 
 
-func UpdateTask(requestContext *gin.Context) {
-	id := requestContext.Param("id")
+func UpdateTask(c *gin.Context) {
+	id := c.Param("id")
 	taskID, err := strconv.Atoi(id)
 	if err != nil {
-		requestContext.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invalid task id"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invalid task id"})
 		return
 	}
 	var updatedTask models.Task
-	if err := requestContext.ShouldBindJSON(&updatedTask); err != nil {
-		requestContext.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ShouldBindJSON(&updatedTask); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	for i, t := range config.Tasks {
@@ -121,34 +127,47 @@ func UpdateTask(requestContext *gin.Context) {
 			config.Tasks[i] = updatedTask
 			config.Tasks[i].ID = taskID
 			if err := config.SaveTasksToJSON(); err != nil {
-				requestContext.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "failed to save tasks"})
+				c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "failed to save tasks"})
 				return
 			}
-			requestContext.IndentedJSON(http.StatusOK, config.Tasks[i])
+			c.IndentedJSON(http.StatusOK, config.Tasks[i])
 			return
 		}
 	}
-	requestContext.IndentedJSON(http.StatusNotFound, gin.H{"message": "task not found"})
-}
-
-func DeleteTask(requestContext *gin.Context) {
-	id := requestContext.Param("id")
-	taskID, err := strconv.Atoi(id)
-	if err != nil {
-		requestContext.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invalid task id"})
-		return
-	}
-	for i, t := range config.Tasks {
-		if t.ID == taskID {
-			config.Tasks = append(config.Tasks[:i], config.Tasks[i+1:]...)
-			if err := config.SaveTasksToJSON(); err != nil {
-				requestContext.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "failed to save tasks"})
-				return
-			}
-			requestContext.IndentedJSON(http.StatusOK, gin.H{"message": "task deleted"})
-			return
-		}
-	}
-	requestContext.IndentedJSON(http.StatusNotFound, gin.H{"message": "task not found"})
+	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "task not found"})
 }
 */
+
+func DeleteTask(c *gin.Context) {
+	// Extract ID from URL parameters
+	idParam := c.Param("id")
+	if idParam == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "ID parameter is required",
+		})
+		return
+	}
+
+	// Convert ID to uint
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid ID format",
+		})
+		return
+	}
+
+	// Delete the task
+	var task models.Task
+	if err := initializers.DB.Delete(&task, uint(id)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Task not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Task deleted",
+	})
+}
+
