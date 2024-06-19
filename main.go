@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/thrtn85/task-mgmt/initializers"
-	"github.com/thrtn85/task-mgmt/routes"
+	"github.com/thrtn85/task-mgmt/backend/initializers"
+	"github.com/thrtn85/task-mgmt/backend/routes"
 )
 
 func init() {

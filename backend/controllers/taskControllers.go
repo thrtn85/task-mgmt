@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/thrtn85/task-mgmt/initializers"
-	"github.com/thrtn85/task-mgmt/models"
+	"github.com/thrtn85/task-mgmt/backend/initializers"
+	"github.com/thrtn85/task-mgmt/backend/models"
 )
 
 func GetTasks(c *gin.Context) {
@@ -107,36 +107,60 @@ func GetTasksByStatus(c *gin.Context) {
 	})
 }
 
-/*
-
-
 func UpdateTask(c *gin.Context) {
-	id := c.Param("id")
-	taskID, err := strconv.Atoi(id)
+	// Extract ID from URL parameters
+	idParam := c.Param("id")
+	if idParam == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "ID parameter is required",
+		})
+		return
+	}
+
+	// Convert ID to uint
+	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invalid task id"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid ID format",
+		})
 		return
 	}
-	var updatedTask models.Task
-	if err := c.ShouldBindJSON(&updatedTask); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+	// Look up the requested task
+	var task models.Task
+	if err := initializers.DB.First(&task, uint(id)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Task not found",
+		})
 		return
 	}
-	for i, t := range config.Tasks {
-		if t.ID == taskID {
-			config.Tasks[i] = updatedTask
-			config.Tasks[i].ID = taskID
-			if err := config.SaveTasksToJSON(); err != nil {
-				c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "failed to save tasks"})
-				return
-			}
-			c.IndentedJSON(http.StatusOK, config.Tasks[i])
-			return
-		}
+
+	// Bind the JSON body to a map
+	var updateData map[string]interface{}
+	if err := c.ShouldBindJSON(&updateData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to parse request body",
+		})
+		return
 	}
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "task not found"})
+
+	// Ensure ID is not updated
+	delete(updateData, "ID")
+
+	// Update the task with the provided fields
+	if err := initializers.DB.Model(&task).Updates(updateData).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to update task",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Return the updated task
+	c.JSON(http.StatusOK, gin.H{
+		"task": task,
+	})
 }
-*/
 
 func DeleteTask(c *gin.Context) {
 	// Extract ID from URL parameters
@@ -170,4 +194,3 @@ func DeleteTask(c *gin.Context) {
 		"message": "Task deleted",
 	})
 }
-

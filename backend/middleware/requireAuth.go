@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"fmt"
-	"github.com/thrtn85/task-mgmt/initializers"
-	"github.com/thrtn85/task-mgmt/models"
+	"github.com/thrtn85/task-mgmt/backend/initializers"
+	"github.com/thrtn85/task-mgmt/backend/models"
 	"net/http"
 	"os"
 	"time"

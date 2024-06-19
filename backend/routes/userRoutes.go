@@ -2,8 +2,8 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/thrtn85/task-mgmt/controllers"
-	"github.com/thrtn85/task-mgmt/middleware"
+	"github.com/thrtn85/task-mgmt/backend/controllers"
+	"github.com/thrtn85/task-mgmt/backend/middleware"
 )
 
 func UserRoutes(router *gin.Engine) {

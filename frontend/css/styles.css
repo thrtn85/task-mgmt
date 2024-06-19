@@ -1,0 +1,32 @@
+
+form {
+     display: flex;
+     flex-direction: column;
+}
+button {
+     width: 50%;
+}
+.hp-content h2 {
+     text-align: center;
+}
+.hp-content {
+     padding: 50px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     flex-direction: column;
+}
+.button-group {
+     text-align: center;
+}
+.button-group button {
+     margin: 5px;
+}
+#signup, #login {
+     border: 1px solid grey;
+     padding: 50px;
+     margin: 5px;
+}
+.task-content {
+     margin: 50px;
+}

@@ -1,7 +1,7 @@
 package initializers
 
 import (
-	"github.com/thrtn85/task-mgmt/models"
+	"github.com/thrtn85/task-mgmt/backend/models"
 )
 
 func SyncDatabase() {
