@@ -11,4 +11,5 @@ func UserRoutes(router *gin.Engine) {
 	router.POST("/login", controllers.Login)
 	router.GET("/validate", middleware.RequireAuth, controllers.Validate)
 	router.GET("/users", middleware.RequireAuth, controllers.GetUsers)
+	router.GET("/users", middleware.RequireAuth, controllers.GetUsers)
 }

@@ -48,14 +48,15 @@ func Signup(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
+// Login handles the login request
 func Login(c *gin.Context) {
-	// Get the email/password off req body
+	// Get the email/password from request body
 	var body struct {
-		Email    string
-		Password string
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
-	if c.Bind(&body) != nil {
+	if err := c.Bind(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Failed to read body",
 		})
@@ -64,26 +65,22 @@ func Login(c *gin.Context) {
 
 	// Look up requested user
 	var user models.User
-	initializers.DB.First(&user, "email = ?", body.Email)
-
-	if user.ID == 0 {
+	if err := initializers.DB.First(&user, "email = ?", body.Email).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid email or password",
 		})
 		return
 	}
 
-	// Compare sent in pass with saved user pass hash
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password))
-
-	if err != nil {
+	// Compare sent password with saved user password hash
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password)); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid email or password",
 		})
 		return
 	}
 
-	// Generate a jwt token
+	// Generate a JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": user.ID,
 		"exp": time.Now().Add(time.Hour * 24 * 30).Unix(),
@@ -91,16 +88,18 @@ func Login(c *gin.Context) {
 
 	// Sign and get the complete encoded token as a string using the secret
 	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET")))
-
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "failed to create token",
+			"error": "Failed to create token",
 		})
 		return
 	}
-	// Send it back
+
+	// Set the JWT token as a cookie
 	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("Authorization", tokenString, 3600*24*30, "", "", false, true)
+	c.SetCookie("Authorization", tokenString, 3600*24*30, "/", "", false, true)
+
+	// Respond with success
 	c.JSON(http.StatusOK, gin.H{})
 }
 
